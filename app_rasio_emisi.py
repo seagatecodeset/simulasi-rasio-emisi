@@ -60,7 +60,6 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
 
     has_class = "klasifikasi" in df.columns
     fig, ax = plt.subplots(figsize=(8, 4))
-    hasil_prediksi = []
 
     if has_class and kategori:
         if kategori != "Semua":
@@ -78,8 +77,6 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
 
             x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
             y_future = model.predict(x_future)
-
-            hasil_prediksi.append([kategori, int(x_future[-1][0]), float(y_future[-1])])
 
             ax.plot(X, y, "o-", label=f"Data Aktual {kategori}")
             ax.plot(x_future, y_future, "--", label=f"Prediksi {kategori}")
@@ -99,8 +96,6 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
                 x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
                 y_future = model.predict(x_future)
 
-                hasil_prediksi.append([k, int(x_future[-1][0]), float(y_future[-1])])
-
                 ax.plot(X, y, "o-", label=f"Data Aktual {k}")
                 ax.plot(x_future, y_future, "--", label=f"Prediksi {k}")
     else:
@@ -114,8 +109,6 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
         x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
         y_future = model.predict(x_future)
 
-        hasil_prediksi.append(["Semua", int(x_future[-1][0]), float(y_future[-1])])
-
         ax.plot(X, y, "o-", label="Data Aktual")
         ax.plot(x_future, y_future, "r--", label=f"Prediksi {tahun_pred} Tahun ke Depan")
 
@@ -124,12 +117,6 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
     ax.set_title(f"Prediksi Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
     st.pyplot(fig)
-
-    # === 🔹 Tambahan: tampilkan hasil nilai prediksi ===
-    if hasil_prediksi:
-        st.success("✅ Hasil Prediksi Rasio Emisi:")
-        hasil_df = pd.DataFrame(hasil_prediksi, columns=["Kategori", "Tahun Prediksi", "Nilai Prediksi"])
-        st.dataframe(hasil_df, use_container_width=True)
 
 # === Tabs ===
 tab1, tab2, tab3 = st.tabs(["🚲 Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar"])
