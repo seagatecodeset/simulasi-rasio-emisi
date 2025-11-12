@@ -44,23 +44,50 @@ def tampilkan_grafik(df, x_col, kategori=None):
 
     return df_mean
 
-def prediksi(df_mean, x_col, tahun_ke_depan):
+def prediksi(df_mean, x_col, tahun_pred):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from sklearn.linear_model import LinearRegression
+
+    # Normalisasi kolom untuk menghindari KeyError
+    df_mean.columns = df_mean.columns.str.strip().str.lower().str.replace(" ", "_")
+
+    # Cari kolom rasio emisi
+    possible_cols = [c for c in df_mean.columns if "rasio" in c and "emisi" in c]
+    if not possible_cols:
+        st.error("❌ Kolom rasio emisi tidak ditemukan pada data agregat!")
+        st.write("Kolom tersedia:", list(df_mean.columns))
+        return
+    rasio_col = possible_cols[0]
+
+    # Ambil data X dan y
     X = np.array(df_mean[x_col]).reshape(-1, 1)
-    y = np.array(df_mean["Rasio Emisi"])
-    model = LinearRegression().fit(X, y)
+    y = np.array(df_mean[rasio_col])
 
-    last_x = int(df_mean[x_col].max())
-    future_x = np.arange(last_x + 1, last_x + tahun_ke_depan + 1)
-    pred_y = model.predict(future_x.reshape(-1, 1))
+    # Latih model regresi linear
+    model = LinearRegression()
+    model.fit(X, y)
 
+    # Prediksi beberapa tahun ke depan
+    x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
+    y_future = model.predict(x_future)
+
+    # Plot aktual + prediksi
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(df_mean[x_col], y, "o-", label="Data Aktual")
-    ax.plot(future_x, pred_y, "r--", label="Prediksi")
+    ax.plot(X, y, "o-", label="Data Aktual")
+    ax.plot(x_future, y_future, "r--", label=f"Prediksi {tahun_pred} Tahun ke Depan")
     ax.set_xlabel(x_col)
     ax.set_ylabel("Rata-Rata Rasio Emisi")
-    ax.set_title(f"Prediksi Rasio Emisi {tahun_ke_depan} tahun mendatang")
+    ax.set_title(f"Prediksi Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
     st.pyplot(fig)
+
+    # Tampilkan data prediksi
+    pred_df = {
+        x_col: x_future.flatten(),
+        "Prediksi Rasio Emisi": y_future
+    }
+    st.dataframe(pred_df)
 
 # === Tab Navigasi ===
 tab1, tab2, tab3 = st.tabs(["🚲 Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar"])
@@ -108,4 +135,5 @@ with tab3:
     if st.button("Prediksi", key="pred3"):
         df_mean = tampilkan_grafik(df, x_col, kategori)
         prediksi(df_mean, x_col, tahun_pred)
+
 
