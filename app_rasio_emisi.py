@@ -123,7 +123,7 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
         ax.plot(x_future, y_future, "r--", label=f"Prediksi {tahun_pred} Tahun ke Depan")
 
         for xf, yf in zip(x_future.flatten(), y_future):
-            hasil_prediksi.append(["Semua", int(xf), float(yf)])
+            hasil_prediksi.append(["Kendaraan Roda Dua", int(xf), float(yf)])
 
     ax.set_xlabel(x_col)
     ax.set_ylabel("Rata-Rata Rasio Emisi")
@@ -179,5 +179,6 @@ with tab3:
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p3")
     if st.button("Prediksi", key="pred3"):
         prediksi(df, x_col, tahun_pred, kategori)
+
 
 
