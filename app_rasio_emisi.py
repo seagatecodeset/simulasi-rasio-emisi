@@ -165,7 +165,12 @@ with tab2:
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p2")
     if st.button("Prediksi", key="pred2"):
         prediksi(df, x_col, tahun_pred, kategori)
-
+    st.markdown("""
+    ### Deskripsi Kategori :
+    - B : Mobil Penumpang Kecil (Sedan/City Car)
+    - C : Mobil Penumpang Besar (Jeep/Minibus)
+    - D : Kendaraan Barang Ringan
+    """)
 # === TAB 3 ===
 with tab3:
     st.subheader("🚛 Kendaraan Solar")
@@ -179,6 +184,16 @@ with tab3:
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p3")
     if st.button("Prediksi", key="pred3"):
         prediksi(df, x_col, tahun_pred, kategori)
+    st.markdown("""
+    ### Deskripsi Kategori :
+    - C : Mobil Penumpang Besar (Jeep/Minibus)
+    - D : Kendaraan Barang Ringan
+    - E : Bus
+    - F : Truk Ringan
+    - G : Truk Berat
+    """)
+
+
 
 
 
