@@ -15,17 +15,33 @@ st.markdown("Analisis dan Prediksi Rasio Emisi berdasarkan kategori kendaraan.")
 
 # === Fungsi bantu untuk grafik dan prediksi ===
 def tampilkan_grafik(df, x_col, kategori=None):
-    if kategori and kategori != "Semua":
-        df = df[df["Kategori"] == kategori]
+    # Normalisasi nama kolom agar tidak error
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
-    df_mean = df.groupby(x_col)["Rasio Emisi"].mean().reset_index()
+    # Temukan nama kolom yang paling mirip dengan 'rasio_emisi'
+    possible_cols = [c for c in df.columns if "rasio" in c and "emisi" in c]
+    if len(possible_cols) == 0:
+        st.error("Kolom rasio emisi tidak ditemukan di data!")
+        st.write("Kolom tersedia:", list(df.columns))
+        return
+    rasio_col = possible_cols[0]
+
+    # Jika kategori tersedia dan kolomnya ada
+    if kategori and "kategori" in df.columns and kategori != "Semua":
+        df = df[df["kategori"] == kategori]
+
+    # Group berdasarkan sumbu X
+    df_mean = df.groupby(df[x_col].name)[rasio_col].mean().reset_index()
+
+    # Plot hasil
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(df_mean[x_col], df_mean["Rasio Emisi"], marker="o", label="Data Aktual")
+    ax.plot(df_mean[x_col], df_mean[rasio_col], marker="o", label="Data Aktual")
     ax.set_xlabel(x_col)
     ax.set_ylabel("Rata-Rata Rasio Emisi")
     ax.set_title(f"Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
     st.pyplot(fig)
+
     return df_mean
 
 def prediksi(df_mean, x_col, tahun_ke_depan):
@@ -53,7 +69,9 @@ tab1, tab2, tab3 = st.tabs(["🚲 Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar
 with tab1:
     st.subheader("🚲 Kendaraan Roda Dua")
     df = data["Kendaraan Roda Dua"]
-    x_col = st.selectbox("Pilih sumbu X:", ["Umur Kendaraan", "Tahun Pembuatan"], key="x1")
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    x_options = [col for col in df.columns if "umur" in col or "tahun" in col]
+    x_col = st.selectbox("Pilih sumbu X:", x_options, key="x1")
     if st.button("Tampilkan Grafik", key="g1"):
         df_mean = tampilkan_grafik(df, x_col)
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p1")
@@ -65,7 +83,9 @@ with tab1:
 with tab2:
     st.subheader("⛽ Kendaraan Bensin")
     df = data["Bensin"]
-    x_col = st.selectbox("Pilih sumbu X:", ["Umur Kendaraan", "Tahun Pembuatan"], key="x2")
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    x_options = [col for col in df.columns if "umur" in col or "tahun" in col]
+    x_col = st.selectbox("Pilih sumbu X:", x_options, key="x2")
     kategori = st.selectbox("Pilih kategori:", ["B", "C", "D", "Semua"], key="cat2")
     if st.button("Tampilkan Grafik", key="g2"):
         df_mean = tampilkan_grafik(df, x_col, kategori)
@@ -78,7 +98,9 @@ with tab2:
 with tab3:
     st.subheader("🚛 Kendaraan Solar")
     df = data["Solar"]
-    x_col = st.selectbox("Pilih sumbu X:", ["Umur Kendaraan", "Tahun Pembuatan"], key="x3")
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    x_options = [col for col in df.columns if "umur" in col or "tahun" in col]
+    x_col = st.selectbox("Pilih sumbu X:", x_options, key="x3")
     kategori = st.selectbox("Pilih kategori:", ["C", "D", "E", "F", "G", "Semua"], key="cat3")
     if st.button("Tampilkan Grafik", key="g3"):
         df_mean = tampilkan_grafik(df, x_col, kategori)
@@ -86,3 +108,4 @@ with tab3:
     if st.button("Prediksi", key="pred3"):
         df_mean = tampilkan_grafik(df, x_col, kategori)
         prediksi(df_mean, x_col, tahun_pred)
+
