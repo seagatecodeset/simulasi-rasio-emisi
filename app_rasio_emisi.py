@@ -137,7 +137,7 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
         st.success("✅ Hasil Prediksi Rata-Rata Rasio Emisi:")
         st.dataframe(hasil_df, use_container_width=True)
 # === Tabs ===
-tab1, tab2, tab3 = st.tabs(["🏍️ Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar"])
+tab1, tab2, tab3 = st.tabs(["🏍️ Kendaraan Roda Dua", "🚗 Kendaraan Bensin", "🚛 Kendaraan Solar"])
 
 # === TAB 1 ===
 with tab1:
@@ -154,7 +154,7 @@ with tab1:
 
 # === TAB 2 ===
 with tab2:
-    st.subheader("⛽ Kendaraan Bensin")
+    st.subheader("🚗 Kendaraan Bensin")
     df = data["Bensin"]
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     x_options = [c for c in df.columns if "umur" in c or "tahun" in c]
@@ -192,6 +192,7 @@ with tab3:
     - F : Truk Ringan
     - G : Truk Berat
     """)
+
 
 
 
