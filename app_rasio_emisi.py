@@ -2,106 +2,162 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 
-st.set_page_config(page_title="Simulasi Rasio Emisi", layout="wide")
+# === Load Data ===
+file_path = "Data_Rasio_Emisi.xlsx"
+sheet_names = ["Kendaraan Roda Dua", "Bensin", "Solar"]
+data = {sheet: pd.read_excel(file_path, sheet_name=sheet) for sheet in sheet_names}
 
-# === Fungsi menampilkan grafik ===
-def tampilkan_grafik(df, x_col, kategori, judul):
-    st.subheader(f"📊 Grafik Rasio Emisi - {judul}")
+st.set_page_config(page_title="Dashboard Rasio Emisi", layout="wide")
+st.title("📊 Dashboard Rasio Emisi Kendaraan")
+st.markdown("Analisis dan Prediksi Rasio Emisi berdasarkan kategori kendaraan.")
 
-    if kategori != "Semua":
-        df_filtered = df[df["Klasifikasi"] == kategori]
-    else:
-        df_filtered = df
+# === Fungsi bantu untuk grafik ===
+def tampilkan_grafik(df, x_col, kategori=None):
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
-    # Hitung rata-rata per tahun dan klasifikasi
-    df_mean = df_filtered.groupby([x_col, "Klasifikasi"])["Rasio Emisi"].mean().reset_index()
+    # deteksi kolom rasio emisi
+    possible_cols = [c for c in df.columns if "rasio" in c and "emisi" in c]
+    if not possible_cols:
+        st.error("Kolom 'Rasio Emisi' tidak ditemukan.")
+        return
+    rasio_col = possible_cols[0]
 
-    # Plot
+    has_class = "klasifikasi" in df.columns
     fig, ax = plt.subplots(figsize=(8, 4))
-    for klas in df_mean["Klasifikasi"].unique():
-        subset = df_mean[df_mean["Klasifikasi"] == klas]
-        ax.plot(subset[x_col], subset["Rasio Emisi"], marker="o", label=f"Klasifikasi {klas}")
 
-    ax.set_title(f"Rasio Emisi per {x_col}")
+    if kategori and has_class:
+        if kategori != "Semua":
+            df = df[df["klasifikasi"].str.upper() == kategori.upper()]
+            df_mean = df.groupby(df[x_col].name)[rasio_col].mean().reset_index()
+            ax.plot(df_mean[x_col], df_mean[rasio_col], marker="o", label=f"Klasifikasi {kategori}")
+        else:
+            for k in sorted(df["klasifikasi"].dropna().unique()):
+                df_sub = df[df["klasifikasi"].str.upper() == k.upper()]
+                df_mean = df_sub.groupby(df_sub[x_col].name)[rasio_col].mean().reset_index()
+                ax.plot(df_mean[x_col], df_mean[rasio_col], marker="o", label=f"Klasifikasi {k}")
+    else:
+        df_mean = df.groupby(df[x_col].name)[rasio_col].mean().reset_index()
+        ax.plot(df_mean[x_col], df_mean[rasio_col], marker="o", label="Data Aktual")
+
     ax.set_xlabel(x_col)
-    ax.set_ylabel("Rasio Emisi")
+    ax.set_ylabel("Rata-Rata Rasio Emisi")
+    ax.set_title(f"Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
-    ax.grid(True)
-
     st.pyplot(fig)
+
     return df_mean
 
-# === Fungsi prediksi sederhana (linear regression) ===
-def prediksi(df_mean, x_col, tahun_pred):
-    st.subheader("🔮 Hasil Prediksi Rasio Emisi")
+# === Fungsi prediksi ===
+def prediksi(df, x_col, tahun_pred, kategori=None):
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    possible_cols = [c for c in df.columns if "rasio" in c and "emisi" in c]
+    if not possible_cols:
+        st.error("Kolom rasio emisi tidak ditemukan.")
+        return
+    rasio_col = possible_cols[0]
 
-    x = np.array(df_mean[x_col]).reshape(-1, 1)
-    y = np.array(df_mean["Rasio Emisi"])
-
-    # Regresi linier manual
-    coef = np.polyfit(x.flatten(), y, 1)
-    poly1d_fn = np.poly1d(coef)
-
-    y_pred = poly1d_fn(tahun_pred)
-    hasil_pred = pd.DataFrame({x_col: tahun_pred, "Prediksi Rasio Emisi": y_pred})
-
-    # Plot hasil prediksi
+    has_class = "klasifikasi" in df.columns
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(x, y, "bo-", label="Data Aktual")
-    ax.plot(tahun_pred, y_pred, "r--", label="Prediksi")
-    ax.set_title(f"Prediksi Rasio Emisi hingga {max(tahun_pred)}")
+
+    if has_class and kategori:
+        if kategori != "Semua":
+            # Prediksi hanya 1 klasifikasi
+            df_sub = df[df["klasifikasi"].str.upper() == kategori.upper()]
+            df_mean = df_sub.groupby(df_sub[x_col].name)[rasio_col].mean().reset_index()
+            if df_mean.empty:
+                st.warning(f"Tidak ada data untuk klasifikasi {kategori}.")
+                return
+
+            X = np.array(df_mean[x_col]).reshape(-1, 1)
+            y = np.array(df_mean[rasio_col])
+            model = LinearRegression()
+            model.fit(X, y)
+
+            x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
+            y_future = model.predict(x_future)
+
+            ax.plot(X, y, "o-", label=f"Data Aktual {kategori}")
+            ax.plot(x_future, y_future, "--", label=f"Prediksi {kategori}")
+        else:
+            # Prediksi semua klasifikasi
+            for k in sorted(df["klasifikasi"].dropna().unique()):
+                df_sub = df[df["klasifikasi"].str.upper() == k.upper()]
+                df_mean = df_sub.groupby(df_sub[x_col].name)[rasio_col].mean().reset_index()
+                if df_mean.empty:
+                    continue
+
+                X = np.array(df_mean[x_col]).reshape(-1, 1)
+                y = np.array(df_mean[rasio_col])
+                model = LinearRegression()
+                model.fit(X, y)
+
+                x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
+                y_future = model.predict(x_future)
+
+                ax.plot(X, y, "o-", label=f"Data Aktual {k}")
+                ax.plot(x_future, y_future, "--", label=f"Prediksi {k}")
+    else:
+        # Prediksi umum tanpa klasifikasi
+        df_mean = df.groupby(df[x_col].name)[rasio_col].mean().reset_index()
+        X = np.array(df_mean[x_col]).reshape(-1, 1)
+        y = np.array(df_mean[rasio_col])
+        model = LinearRegression()
+        model.fit(X, y)
+
+        x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
+        y_future = model.predict(x_future)
+
+        ax.plot(X, y, "o-", label="Data Aktual")
+        ax.plot(x_future, y_future, "r--", label=f"Prediksi {tahun_pred} Tahun ke Depan")
+
     ax.set_xlabel(x_col)
-    ax.set_ylabel("Rasio Emisi")
+    ax.set_ylabel("Rata-Rata Rasio Emisi")
+    ax.set_title(f"Prediksi Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
-    ax.grid(True)
     st.pyplot(fig)
 
-    # Tampilkan tabel hasil prediksi
-    st.dataframe(hasil_pred.style.format({x_col: "{:.0f}", "Prediksi Rasio Emisi": "{:.4f}"}))
+# === Tabs ===
+tab1, tab2, tab3 = st.tabs(["🚲 Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar"])
 
-# === Main App ===
-st.title("🌱 Simulasi Rasio Emisi Kendaraan")
+# === TAB 1 ===
+with tab1:
+    st.subheader("🚲 Kendaraan Roda Dua")
+    df = data["Kendaraan Roda Dua"]
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    x_options = [c for c in df.columns if "umur" in c or "tahun" in c]
+    x_col = st.selectbox("Pilih sumbu X:", x_options, key="x1")
+    if st.button("Tampilkan Grafik", key="g1"):
+        tampilkan_grafik(df, x_col)
+    tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p1")
+    if st.button("Prediksi", key="pred1"):
+        prediksi(df, x_col, tahun_pred)
 
-# Upload file Excel
-uploaded_file = st.file_uploader("📂 Unggah file Excel Data Rasio Emisi", type=["xlsx"])
-if uploaded_file:
-    xls = pd.ExcelFile(uploaded_file)
-    sheet_names = xls.sheet_names
+# === TAB 2 ===
+with tab2:
+    st.subheader("⛽ Kendaraan Bensin")
+    df = data["Bensin"]
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    x_options = [c for c in df.columns if "umur" in c or "tahun" in c]
+    x_col = st.selectbox("Pilih sumbu X:", x_options, key="x2")
+    kategori = st.selectbox("Pilih kategori:", ["B", "C", "D", "Semua"], key="cat2")
+    if st.button("Tampilkan Grafik", key="g2"):
+        tampilkan_grafik(df, x_col, kategori)
+    tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p2")
+    if st.button("Prediksi", key="pred2"):
+        prediksi(df, x_col, tahun_pred, kategori)
 
-    tab_list = st.tabs(sheet_names)
-
-    for i, sheet in enumerate(sheet_names):
-        with tab_list[i]:
-            df = pd.read_excel(xls, sheet_name=sheet)
-            st.markdown(f"### Data: {sheet}")
-            st.dataframe(df.head())
-
-            # Pilih kolom tahun dan klasifikasi
-            x_col = st.selectbox(f"Pilih kolom X untuk {sheet}", df.columns, index=0, key=f"xcol_{sheet}")
-            kategori = st.selectbox(
-                f"Pilih Klasifikasi untuk {sheet}",
-                ["Semua"] + sorted(df["Klasifikasi"].unique().tolist()),
-                key=f"kat_{sheet}"
-            )
-
-            # Tampilkan grafik aktual
-            df_mean = tampilkan_grafik(df, x_col, kategori, sheet)
-
-            # Input prediksi
-            tahun_pred = st.slider(f"Pilih rentang {x_col} untuk prediksi {sheet}", 
-                                   int(df_mean[x_col].min()), 
-                                   int(df_mean[x_col].max()) + 5, 
-                                   (int(df_mean[x_col].max())-2, int(df_mean[x_col].max())+3),
-                                   key=f"slider_{sheet}")
-            tahun_pred = np.arange(tahun_pred[0], tahun_pred[1]+1)
-
-            # Filter prediksi per klasifikasi
-            if kategori == "Semua":
-                for klas in df_mean["Klasifikasi"].unique():
-                    st.markdown(f"#### Prediksi untuk Klasifikasi {klas}")
-                    df_k = df_mean[df_mean["Klasifikasi"] == klas]
-                    prediksi(df_k, x_col, tahun_pred)
-            else:
-                df_k = df_mean[df_mean["Klasifikasi"] == kategori]
-                prediksi(df_k, x_col, tahun_pred)
+# === TAB 3 ===
+with tab3:
+    st.subheader("🚛 Kendaraan Solar")
+    df = data["Solar"]
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    x_options = [c for c in df.columns if "umur" in c or "tahun" in c]
+    x_col = st.selectbox("Pilih sumbu X:", x_options, key="x3")
+    kategori = st.selectbox("Pilih kategori:", ["C", "D", "E", "F", "G", "Semua"], key="cat3")
+    if st.button("Tampilkan Grafik", key="g3"):
+        tampilkan_grafik(df, x_col, kategori)
+    tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p3")
+    if st.button("Prediksi", key="pred3"):
+        prediksi(df, x_col, tahun_pred, kategori)
