@@ -60,6 +60,7 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
 
     has_class = "klasifikasi" in df.columns
     fig, ax = plt.subplots(figsize=(8, 4))
+    hasil_prediksi = []  # tampung semua hasil prediksi di sini
 
     if has_class and kategori:
         if kategori != "Semua":
@@ -80,8 +81,13 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
 
             ax.plot(X, y, "o-", label=f"Data Aktual {kategori}")
             ax.plot(x_future, y_future, "--", label=f"Prediksi {kategori}")
+
+            # Simpan hasil ke tabel
+            for xf, yf in zip(x_future.flatten(), y_future):
+                hasil_prediksi.append([kategori, int(xf), float(yf)])
+
         else:
-            # Prediksi semua klasifikasi
+            # Prediksi untuk semua klasifikasi
             for k in sorted(df["klasifikasi"].dropna().unique()):
                 df_sub = df[df["klasifikasi"].str.upper() == k.upper()]
                 df_mean = df_sub.groupby(df_sub[x_col].name)[rasio_col].mean().reset_index()
@@ -95,6 +101,10 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
 
                 x_future = np.arange(X.max() + 1, X.max() + tahun_pred + 1).reshape(-1, 1)
                 y_future = model.predict(x_future)
+
+                # Simpan hasil prediksi per klasifikasi
+                for xf, yf in zip(x_future.flatten(), y_future):
+                    hasil_prediksi.append([k, int(xf), float(yf)])
 
                 ax.plot(X, y, "o-", label=f"Data Aktual {k}")
                 ax.plot(x_future, y_future, "--", label=f"Prediksi {k}")
@@ -112,14 +122,20 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
         ax.plot(X, y, "o-", label="Data Aktual")
         ax.plot(x_future, y_future, "r--", label=f"Prediksi {tahun_pred} Tahun ke Depan")
 
+        for xf, yf in zip(x_future.flatten(), y_future):
+            hasil_prediksi.append(["Semua", int(xf), float(yf)])
+
     ax.set_xlabel(x_col)
     ax.set_ylabel("Rata-Rata Rasio Emisi")
     ax.set_title(f"Prediksi Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
     st.pyplot(fig)
-    
-    pred_df = pd.DataFrame({x_col: x_future.flatten(), "Prediksi Rasio Emisi": y_future})
-    st.dataframe(pred_df)
+
+    # === tampilkan hasil prediksi di tabel ===
+    if hasil_prediksi:
+        hasil_df = pd.DataFrame(hasil_prediksi, columns=["Klasifikasi", "Tahun Prediksi", "Prediksi Rasio Emisi"])
+        st.success("✅ Hasil Prediksi Rata-Rata Rasio Emisi:")
+        st.dataframe(hasil_df, use_container_width=True)
 # === Tabs ===
 tab1, tab2, tab3 = st.tabs(["🚲 Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar"])
 
@@ -163,4 +179,5 @@ with tab3:
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p3")
     if st.button("Prediksi", key="pred3"):
         prediksi(df, x_col, tahun_pred, kategori)
+
 
