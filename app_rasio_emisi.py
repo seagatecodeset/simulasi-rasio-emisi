@@ -159,14 +159,14 @@ with tab2:
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     x_options = [c for c in df.columns if "umur" in c or "tahun" in c]
     x_col = st.selectbox("Pilih sumbu X:", x_options, key="x2")
-    kategori = st.selectbox("Pilih kategori:", ["B", "C", "D", "Semua"], key="cat2")
+    kategori = st.selectbox("Pilih Klasifikasi Kendaraan:", ["B", "C", "D", "Semua"], key="cat2")
     if st.button("Tampilkan Grafik", key="g2"):
         tampilkan_grafik(df, x_col, kategori)
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p2")
     if st.button("Prediksi", key="pred2"):
         prediksi(df, x_col, tahun_pred, kategori)
     st.markdown("""
-    ### Deskripsi Kategori :
+    ### Deskripsi Klasifikasi Kendaraan :
     - B : Mobil Penumpang Kecil (Sedan/City Car)
     - C : Mobil Penumpang Besar (Jeep/Minibus)
     - D : Kendaraan Barang Ringan
@@ -178,20 +178,21 @@ with tab3:
     df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
     x_options = [c for c in df.columns if "umur" in c or "tahun" in c]
     x_col = st.selectbox("Pilih sumbu X:", x_options, key="x3")
-    kategori = st.selectbox("Pilih kategori:", ["C", "D", "E", "F", "G", "Semua"], key="cat3")
+    kategori = st.selectbox("Pilih Klasifikasi Kendaraan:", ["C", "D", "E", "F", "G", "Semua"], key="cat3")
     if st.button("Tampilkan Grafik", key="g3"):
         tampilkan_grafik(df, x_col, kategori)
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p3")
     if st.button("Prediksi", key="pred3"):
         prediksi(df, x_col, tahun_pred, kategori)
     st.markdown("""
-    ### Deskripsi Kategori :
+    ### Deskripsi Klasifikasi Kendaraan :
     - C : Mobil Penumpang Besar (Jeep/Minibus)
     - D : Kendaraan Barang Ringan
     - E : Bus
     - F : Truk Ringan
     - G : Truk Berat
     """)
+
 
 
 
