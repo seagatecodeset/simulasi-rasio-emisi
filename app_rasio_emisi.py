@@ -228,7 +228,7 @@ else:
 # -----------------------------
 st.markdown("""
 ### Catatan penting
-- Kode ini menggunakan model regresi polynomial sederhana (Ridge). Ini cepat dan mudah, tetapi **bukan** model time-series kompleks.
-- Jika Anda ingin prediksi berdasarkan waktu nyata (mis. memprediksi untuk *tahun kalender* ke depan), pastikan kolom X adalah `Tahun Pembuatan` yang representatif.
-- Untuk perbaikan: gunakan model ARIMA/SARIMA/Prophet/LSTM bila data berurutan per waktu tersedia.
+- Kode ini menggunakan model regresi polynomial sederhana (Ridge) **bukan** model time-series kompleks.
+- Untuk perbaikan: bisa menggunakan model ARIMA/SARIMA/Prophet/LSTM bila data yang tersedia berurutan per waktu secara time series.
 """)
+
