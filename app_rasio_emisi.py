@@ -117,7 +117,9 @@ def prediksi(df, x_col, tahun_pred, kategori=None):
     ax.set_title(f"Prediksi Rata-Rata Rasio Emisi berdasarkan {x_col}")
     ax.legend()
     st.pyplot(fig)
-
+    
+    pred_df = pd.DataFrame({x_col: x_future.flatten(), "Prediksi Rasio Emisi": y_future})
+    st.dataframe(pred_df)
 # === Tabs ===
 tab1, tab2, tab3 = st.tabs(["🚲 Kendaraan Roda Dua", "⛽ Bensin", "🚛 Solar"])
 
@@ -161,3 +163,4 @@ with tab3:
     tahun_pred = st.number_input("Prediksi berapa tahun mendatang:", 1, 10, 3, key="p3")
     if st.button("Prediksi", key="pred3"):
         prediksi(df, x_col, tahun_pred, kategori)
+
